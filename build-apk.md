@@ -90,11 +90,36 @@ Read the project source to extract current values for submission.
 
 **`configValues` object** — Fill in values from the source that match the app type's config schema. Only include fields you have real values for.
 
-**Ask the user what icon/logo to use.** Check available assets:
-```bash
-curl -s https://apk.g3h.cloud/api/v1/assets -H "X-API-Key: $SKILL_KEY"
-```
-Show the list and ask which one to use (if any). The chosen filename goes in `iconPath` (e.g., `"1709234567-abc123.png"`).
+#### Icon / Image handling
+
+You have three options for providing an app icon:
+
+1. **Use an existing asset** — Check available assets:
+   ```bash
+   curl -s https://apk.g3h.cloud/api/v1/assets -H "X-API-Key: $SKILL_KEY"
+   ```
+   Set the chosen filename as `iconPath` (e.g., `"1709234567-abc123.png"`).
+
+2. **Upload an image file** — If the user has a local image file to use as the icon, upload it first:
+   ```bash
+   curl -s -X POST https://apk.g3h.cloud/api/v1/assets/upload \
+     -H "X-API-Key: $SKILL_KEY" \
+     -F "file=@/path/to/icon.png"
+   ```
+   Use the returned `filename` as `iconPath`.
+
+3. **Provide an image URL** — If the user provides a URL to an image, either:
+   - Download it to an asset first:
+     ```bash
+     curl -s -X POST https://apk.g3h.cloud/api/v1/assets/from-url \
+       -H "X-API-Key: $SKILL_KEY" \
+       -H "Content-Type: application/json" \
+       -d '{"url": "https://example.com/logo.png"}'
+     ```
+     Use the returned `filename` as `iconPath`.
+   - Or pass `iconUrl` directly in the build submission (it will be downloaded automatically).
+
+**Ask the user what icon/logo to use** if none is obvious from the project.
 
 If unsure about any config value, **ask the user** rather than guessing.
 
@@ -109,6 +134,7 @@ Submitting build:
   App Type:  Rovers Route (ID: 4)
   Keystore:  Production (ID: 1)
   Icon:      1709234567-abc123.png
+  Source:    server template / uploaded project
   Config:    apiBaseUrl=https://api.roversroute.com/, primaryColor=#4CAF50
 ```
 
@@ -116,12 +142,66 @@ Ask the user to confirm before proceeding.
 
 ### Step 6: Submit the build
 
+The build can be submitted in two ways:
+
+#### Option A: JSON submission (using server-side template)
+
+Standard submission using a template already on the build server:
 ```bash
 curl -s -X POST https://apk.g3h.cloud/api/v1/builds \
   -H "X-API-Key: $SKILL_KEY" \
   -H "Content-Type: application/json" \
   -d '$JSON_BODY'
 ```
+
+The JSON body supports these fields:
+- `appTypeId` (required), `appName` (required), `packageId` (required)
+- `versionName`, `versionCode`, `keystoreId`, `templateVersionId`
+- `configValues` (object of key/value pairs matching the config schema)
+- `iconPath` (filename of an existing asset)
+- `iconUrl` (URL to download an image — will be fetched and used as the icon automatically)
+
+#### Option B: Multipart submission (uploading project source)
+
+If the user wants to build from a local project directory (e.g., their `frontend/android` folder), zip it up and upload it:
+```bash
+# Zip the Android project
+cd /path/to/project
+zip -r /tmp/android-project.zip frontend/android/
+
+# Or just the android directory itself
+cd /path/to/project/frontend/android
+zip -r /tmp/android-project.zip .
+
+# Submit with the project archive
+curl -s -X POST https://apk.g3h.cloud/api/v1/builds \
+  -H "X-API-Key: $SKILL_KEY" \
+  -F "appTypeId=1" \
+  -F "appName=My App" \
+  -F "packageId=com.example.app" \
+  -F "versionName=1.0.0" \
+  -F "keystoreId=1" \
+  -F 'configValues={"apiBaseUrl":"https://api.example.com"}' \
+  -F "projectArchive=@/tmp/android-project.zip"
+```
+
+You can also upload an icon file in the same request:
+```bash
+curl -s -X POST https://apk.g3h.cloud/api/v1/builds \
+  -H "X-API-Key: $SKILL_KEY" \
+  -F "appTypeId=1" \
+  -F "appName=My App" \
+  -F "packageId=com.example.app" \
+  -F "iconFile=@/path/to/icon.png" \
+  -F "projectArchive=@/tmp/android-project.zip"
+```
+
+**Notes on project archives:**
+- The archive can contain the project at the root, or inside a single top-level directory
+- If the archive contains a `frontend/android/` subdirectory, it will be detected and used automatically
+- The project must contain `build.gradle` or `settings.gradle` (native Android project)
+- Archives can be `.zip`, `.tar`, `.tar.gz`, or `.tgz`
+- Max upload size: 200MB
 
 Response: `{"buildId":"...","status":"queued"}`. Save the `buildId`.
 
