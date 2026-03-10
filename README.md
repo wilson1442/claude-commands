@@ -1,60 +1,63 @@
-# Claude Code Commands
+# Claude Code Skills
 
-Shared slash commands for Claude Code.
+A collection of reusable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Each skill lives in its own directory under `skills/` and can be installed into any project.
 
-## Quick Start
+## Available Skills
 
-```bash
-# Clone the repo
-git clone git@github.com:wilson1442/claude-commands.git /opt/claude-commands
+### `build-apk`
 
-# Symlink into Claude Code
-mkdir -p ~/.claude/commands
-ln -sf /opt/claude-commands/build-apk.md ~/.claude/commands/build-apk.md
+Submits a project to the [APK Builder](https://apk.g3h.cloud) service for Android compilation. Handles app type detection/creation, config extraction, icon management, build submission, polling, and APK download — all from a single `/build-apk` command.
 
-# Add the skill API key (get it from https://apk.g3h.cloud → Settings → Skill API Key)
-echo -n "apb_sk_..." > ~/.apk-builder-skill-key
-chmod 600 ~/.apk-builder-skill-key
-```
+**Requirements:** Skill API key saved at `~/.apk-builder-skill-key`
 
-## Commands
+### `nocodb`
 
-### `/build-apk`
+Scaffolds full NocoDB CRUD integration into any web project. Auto-detects the framework (Next.js, Express, React SPA, Python, etc.) and generates server-side API routes, a typed client, environment config, and usage examples.
 
-Submits the current project to the APK Builder at `https://apk.g3h.cloud` for compilation.
+**Supported frameworks:** Next.js (App & Pages Router), Express, Fastify, React/Vue SPA, FastAPI/Flask, standalone Node.js
 
-**What it does:**
+## Installation
 
-1. Reads the skill API key from `~/.apk-builder-skill-key`
-2. Checks if an app type already exists for this project — if not, analyzes the source code and creates one (config schema, template dir, platform, etc.)
-3. Extracts build config from the project (app name, package ID, version, colors, API URLs, etc.)
-4. Asks which icon/logo and keystore to use
-5. Shows a summary and asks for confirmation
-6. Submits the build, polls for completion, downloads the APK to the project root
+### Option 1: Install a single skill
 
-**Usage:**
-
-```
-/build-apk           # build with version from source
-/build-apk 2.1.0     # override version
-```
-
-**Requirements:**
-
-- Skill API key at `~/.apk-builder-skill-key`
-- `curl` available on the system
-
-**Getting the skill key:**
-
-1. Go to https://apk.g3h.cloud
-2. Log in to the admin UI
-3. Settings → Skill API Key → click the eye icon to reveal, or Roll Key to generate a new one
-4. Copy the key and save it:
+Clone the repo, then symlink the skill directory into your project's `.claude/skills/`:
 
 ```bash
+# Clone the repo (one-time setup)
+git clone https://github.com/wilson1442/claude-commands.git /opt/claude-commands
+
+# From your project root, symlink the skill you want
+mkdir -p .claude/skills
+ln -sf /opt/claude-commands/skills/build-apk .claude/skills/build-apk
+ln -sf /opt/claude-commands/skills/nocodb .claude/skills/nocodb
+```
+
+### Option 2: Install all skills
+
+Symlink the entire `skills/` directory contents into your project:
+
+```bash
+# Clone the repo (one-time setup)
+git clone https://github.com/wilson1442/claude-commands.git /opt/claude-commands
+
+# From your project root, symlink all skills at once
+mkdir -p .claude/skills
+for skill in /opt/claude-commands/skills/*/; do
+  ln -sf "$skill" .claude/skills/
+done
+```
+
+### Skill-specific setup
+
+**build-apk** — requires an API key:
+
+```bash
+# Get your key from https://apk.g3h.cloud -> Settings -> Skill API Key
 echo -n "apb_sk_your_key_here" > ~/.apk-builder-skill-key
 chmod 600 ~/.apk-builder-skill-key
 ```
+
+**nocodb** — no extra setup needed. The skill will prompt for your NocoDB URL, table ID, and API token when you use it.
 
 ## Updating
 
@@ -62,4 +65,28 @@ chmod 600 ~/.apk-builder-skill-key
 cd /opt/claude-commands && git pull
 ```
 
-Symlinked commands update automatically.
+Symlinked skills update automatically.
+
+## Structure
+
+```
+skills/
+├── build-apk/
+│   └── SKILL.md              # Skill definition
+└── nocodb/
+    ├── SKILL.md              # Skill definition
+    └── references/           # Framework-specific code templates
+        ├── express.md
+        ├── nextjs-app.md
+        ├── nextjs-pages.md
+        ├── python.md
+        ├── spa.md
+        └── standalone.md
+```
+
+## Adding a new skill
+
+1. Create a directory under `skills/` with your skill name
+2. Add a `SKILL.md` with the skill definition (frontmatter + instructions)
+3. Optionally add a `references/` subdirectory for supporting templates
+4. Update this README with a description and any setup steps
