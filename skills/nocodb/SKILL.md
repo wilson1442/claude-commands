@@ -38,6 +38,69 @@ until all three are provided:
 Also ask: **"What are you building? Give me a quick description so I can tailor the integration."**
 This context helps you name functions, add relevant comments, and wire up the right patterns.
 
+Additionally, ask: **"Should I auto-create the table fields in NocoDB for you? If so, what fields do you need?"**
+
+If the user wants fields auto-created, proceed to **Step 1b** below. Otherwise skip to Step 2.
+
+---
+
+## Step 1b: Auto-Create Table Fields
+
+When the user wants fields auto-created in NocoDB, use the NocoDB meta API to create
+columns and then make them visible in the default view.
+
+### Creating columns
+
+Use `POST /api/v2/meta/tables/{TABLE_ID}/columns` for each field:
+
+```
+POST {NOCODB_URL}/api/v2/meta/tables/{TABLE_ID}/columns
+Headers: xc-token: {API_KEY}, Content-Type: application/json
+Body: { "title": "FieldName", "uidt": "SingleLineText", "column_name": "FieldName" }
+```
+
+Common `uidt` values:
+| Type | `uidt` value |
+|---|---|
+| Short text | `SingleLineText` |
+| Long text | `LongText` |
+| Email | `Email` |
+| Phone | `PhoneNumber` |
+| Number | `Number` |
+| Checkbox | `Checkbox` |
+| Date | `Date` |
+| URL | `URL` |
+| Single select | `SingleSelect` |
+
+If the table already has a default `Title` column that should be repurposed (e.g. renamed
+to `Name`), use `PATCH /api/v2/meta/columns/{COLUMN_ID}` to rename it instead of creating
+a duplicate.
+
+### Making columns visible in the default view
+
+**This is critical.** Newly created columns are hidden in the default view by default.
+After creating columns, you must:
+
+1. Get the default view ID from the table metadata:
+   ```
+   GET {NOCODB_URL}/api/v2/meta/tables/{TABLE_ID}
+   ```
+   The default view is in `response.views[0].id`.
+
+2. Get all view columns:
+   ```
+   GET {NOCODB_URL}/api/v2/meta/views/{VIEW_ID}/columns
+   ```
+
+3. For each column where `show` is `false`, enable it:
+   ```
+   PATCH {NOCODB_URL}/api/v2/meta/views/{VIEW_ID}/columns/{VIEW_COLUMN_ID}
+   Body: { "show": true }
+   ```
+
+Always verify the columns are visible after creation by checking the view columns
+endpoint. Do not skip this step — users will see a blank table otherwise.
+
 ---
 
 ## Step 2: Detect the Project Framework
