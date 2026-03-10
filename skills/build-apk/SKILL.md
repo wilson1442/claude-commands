@@ -87,6 +87,7 @@ Read the project source to extract current values for submission.
 - `versionName` — Semver string (from build.gradle, app.json, package.json)
 - `versionCode` — Integer version code
 - `keystoreId` — check available keystores: `curl -s https://apk.g3h.cloud/api/v1/keystores -H "X-API-Key: $SKILL_KEY"`. Ask the user which to use if there are multiple.
+- `buildFormat` — `"aab"` (Android App Bundle, required for new Google Play submissions) or `"apk"` (default). **For Play Store submissions, always use `"aab"`.**
 
 **`configValues` object** — Fill in values from the source that match the app type's config schema. Only include fields you have real values for.
 
@@ -131,6 +132,7 @@ Submitting build:
   App:       Rovers Route
   Package:   com.roversroute.app
   Version:   1.2.0
+  Format:    AAB (Play Store) / APK
   App Type:  Rovers Route (ID: 4)
   Keystore:  Production (ID: 1)
   Icon:      1709234567-abc123.png
@@ -157,6 +159,7 @@ curl -s -X POST https://apk.g3h.cloud/api/v1/builds \
 The JSON body supports these fields:
 - `appTypeId` (required), `appName` (required), `packageId` (required)
 - `versionName`, `versionCode`, `keystoreId`, `templateVersionId`
+- `buildFormat` — `"aab"` or `"apk"` (default `"apk"`)
 - `configValues` (object of key/value pairs matching the config schema)
 - `iconPath` (filename of an existing asset)
 - `iconUrl` (URL to download an image — will be fetched and used as the icon automatically)
@@ -180,6 +183,7 @@ curl -s -X POST https://apk.g3h.cloud/api/v1/builds \
   -F "appName=My App" \
   -F "packageId=com.example.app" \
   -F "versionName=1.0.0" \
+  -F "buildFormat=aab" \
   -F "keystoreId=1" \
   -F 'configValues={"apiBaseUrl":"https://api.example.com"}' \
   -F "projectArchive=@/tmp/android-project.zip"
@@ -219,16 +223,19 @@ Print each status change (e.g., `queued -> preparing -> building -> signing -> c
 
 Stop when `completed` or `failed`. On failure, show the `statusMessage`.
 
-### Step 8: Download the APK
+### Step 8: Download the output
 
 On `completed`:
 ```bash
-curl -s -L -o "$APP_NAME-$VERSION.apk" \
+# Extension is .aab for AAB builds, .apk for APK builds
+curl -s -L -o "$APP_NAME-$VERSION.$EXT" \
   https://apk.g3h.cloud/api/v1/builds/$BUILD_ID/download \
   -H "X-API-Key: $SKILL_KEY"
 ```
 
 Save to the project root. Tell the user the file path and size.
+
+For Play Store submissions (AAB), remind the user to upload the `.aab` file to Google Play Console and enroll in Play App Signing.
 
 ## Argument handling
 
