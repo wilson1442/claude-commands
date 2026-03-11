@@ -16,6 +16,12 @@ Scaffolds full NocoDB CRUD integration into any web project. Auto-detects the fr
 
 **Supported frameworks:** Next.js (App & Pages Router), Express, Fastify, React/Vue SPA, FastAPI/Flask, standalone Node.js
 
+### `espocrm`
+
+Integrates a web project with a self-hosted EspoCRM instance for capturing leads, contacts, and other entity data from web forms. Auto-detects the project framework, generates server-side API routes (keeping credentials hidden), client-side form helpers, and field mapping configuration.
+
+**Supported frameworks:** FastAPI, Next.js (App & Pages Router), Express, Fastify, React/Vue SPA, standalone Node.js
+
 ## Installation
 
 ### Option 1: Install a single skill
@@ -30,6 +36,7 @@ git clone https://github.com/wilson1442/claude-commands.git /opt/claude-commands
 mkdir -p .claude/skills
 ln -sf /opt/claude-commands/skills/build-apk .claude/skills/build-apk
 ln -sf /opt/claude-commands/skills/nocodb .claude/skills/nocodb
+ln -sf /opt/claude-commands/skills/espocrm .claude/skills/espocrm
 ```
 
 ### Option 2: Install all skills
@@ -59,6 +66,15 @@ chmod 600 ~/.apk-builder-skill-key
 
 **nocodb** — no extra setup needed. The skill will prompt for your NocoDB URL, table ID, and API token when you use it.
 
+**espocrm** — no extra setup needed. The skill will prompt for your EspoCRM URL, API key, and entity types when you use it. Optionally, pre-save credentials:
+
+```bash
+cat > ~/.espocrm-credentials.json << 'EOF'
+{"url": "https://crm.example.com", "apiKey": "your-api-key"}
+EOF
+chmod 600 ~/.espocrm-credentials.json
+```
+
 ## Updating
 
 ```bash
@@ -73,15 +89,17 @@ Symlinked skills update automatically.
 skills/
 ├── build-apk/
 │   └── SKILL.md              # Skill definition
-└── nocodb/
-    ├── SKILL.md              # Skill definition
-    └── references/           # Framework-specific code templates
-        ├── express.md
-        ├── nextjs-app.md
-        ├── nextjs-pages.md
-        ├── python.md
-        ├── spa.md
-        └── standalone.md
+├── nocodb/
+│   ├── SKILL.md              # Skill definition
+│   └── references/           # Framework-specific code templates
+│       ├── express.md
+│       ├── nextjs-app.md
+│       ├── nextjs-pages.md
+│       ├── python.md
+│       ├── spa.md
+│       └── standalone.md
+└── espocrm/
+    └── SKILL.md              # Skill definition
 ```
 
 ## Adding a new skill
